@@ -228,6 +228,8 @@ void* SimpleDataExchangerServer::__listen_routine(void *param)
 		{
 			sem_post(&host->__workers_sem_guard);
 			if(instance != nullptr) free(instance);
+
+			/*
 			//kill all workers and return
 			for(auto i = host->__worker_index.begin(); i != host->__worker_index.end(); ++i)
 			{
@@ -239,6 +241,7 @@ void* SimpleDataExchangerServer::__listen_routine(void *param)
 			host->__corrupt_workers.clear();
 
 			return nullptr;
+			*/
 		}
 		catch(SysResourceException &e)
 		{

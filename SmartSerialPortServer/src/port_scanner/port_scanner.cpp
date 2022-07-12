@@ -375,7 +375,6 @@ void* PortScanner::__scan_routine(void* p)
 
 		r2h_byte dev = 0;
 		timespec time;
-		timespec time2;
 		for(auto d = pDevices->begin(); d != pDevices->end(); ++d)
 		{
 			(*d)->ReadConfiguration(nullptr, &dev, nullptr, nullptr);
@@ -386,7 +385,6 @@ void* PortScanner::__scan_routine(void* p)
 					pHost->__slaves_status[dev].ulast_access, &(pHost->__slaves_status[dev].uacess_interval),
 					&(pHost->__slaves_status[dev].uacess_interval_max),
 					&(pHost->__slaves_status[dev].uacess_interval_min));
-			clock_gettime(CLOCK_REALTIME, &time2);
 
 			pHost->__diag_mem.Write(__SLAVE_STATUS_POS + dev * sizeof(serial_port_device_status_t),
 					sizeof(serial_port_device_status_t),
@@ -394,7 +392,7 @@ void* PortScanner::__scan_routine(void* p)
 
 			if(pHost->__slaves_status[dev].exception == (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_ERROR)
 			{
-				usleep(100000);//100ms
+				//usleep(100000);//100ms
 				pPort->Discard(UART_QUEUE_SELECTOR_T::IN_OUT);
 			}
 		}

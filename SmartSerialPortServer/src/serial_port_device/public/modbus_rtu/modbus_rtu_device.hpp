@@ -35,9 +35,10 @@ private:
 	ModbusRtuProtocol* __protocol;
 	const r2h_uint8 __unit;
 	const r2h_uint16 __roffset, __rsize, __woffset, __wsize;
+	r2h_uint16 __last_ret;
 	const r2h_int32 __wtimeout, __rtimeout;
 	const r2h_uint32 __prohibit;
-	r2h_uint32 __max_interval, __min_interval, __last_access_ticks;
+	r2h_uint32 __max_interval, __min_interval, __last_access_ticks, __last_op_ticks;
 	bool __reset;
 
 
