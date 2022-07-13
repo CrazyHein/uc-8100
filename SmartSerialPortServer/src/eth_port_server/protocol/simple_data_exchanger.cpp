@@ -208,7 +208,7 @@ r2h_byte SDEProtocol::__recv_ack_datagram(r2h_int32 rtimeout, bool &exception)
 		if(h->bytes!= sizeof(r2h_byte))
 			throw GenericException(SDE_RECV_INVALID_DATAGRAM);
 		else
-			return *(__datagram + sizeof(sde_datagram_header_t) + 1);
+			return *(__datagram + sizeof(sde_datagram_header_t));
 	}
 	else
 	{
