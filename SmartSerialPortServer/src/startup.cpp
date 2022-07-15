@@ -11,7 +11,9 @@
 #include <iostream>
 #include <unistd.h>
 #include <map>
+#include <signal.h>
 #include "serial_port_device/public/modbus_rtu/modbus_rtu_protocol.hpp"
+#include "serial_port_device/public/modbus_ascii/modbus_ascii_protocol.hpp"
 #include "eth_port_server/service/sde_server.hpp"
 #include "eth_port_server/memory/diagnostic_info_def.hpp"
 #include "port_scanner/port_scanner.hpp"
@@ -35,8 +37,14 @@ int main(int argc,char* argv[]) {
 	try
 	{
 		set_led_all_off();
+		if(argc != 2)
+		{
+			set_uc8100_red_led(LED_STATE_T::LED_STATE_BLINK);
+			return -1;
+		}
 		set_uc8100_green_led(LED_STATE_T::LED_STATE_BLINK);
 
+		signal(SIGPIPE,SIG_IGN);
 		param = new StartupParameter(argv[1], "SDE");
 		const server_configuration_t& serverParam = param->Server();
 		const std::vector<port_configuration_t>& portParam = param->Ports();

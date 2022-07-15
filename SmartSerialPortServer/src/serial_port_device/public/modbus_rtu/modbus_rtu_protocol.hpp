@@ -25,6 +25,8 @@ namespace serial_port_device
 #define MODBUS_RTU_PDU_SIZE_IN_BYTE (253)
 #define READ_HOLDINGS_MAX_IN_REGISTER (125)
 #define WRITE_MULTIPLES_MAX_REGISTER (123)
+#define RW_READ_REGISTERS_MAX_IN_REGISTER (125)
+#define RW_WRITE_REGISTERS_MAX_IN_REGISTER (121)
 
 typedef r2h_uint16 modbus_rtu_register;
 
@@ -32,6 +34,7 @@ typedef enum class MODBUS_RTU_FUNC_CODE : r2h_byte
 {
 	READ_HOLDING_REGISTERS = 0x03,
 	WRITE_MULTIPLE_REGISTERS = 0x10,
+	READ_WRITE_REGISTERS = 0x17,
 	EXCEPTION_MASK = 0x80,
 }MODBUS_RTU_FUNC_CODE_T;
 
@@ -84,6 +87,37 @@ typedef struct modbus_rtu_pdu
 		struct
 		{
 			MODBUS_RTU_FUNC_CODE_T		code;
+			r2h_uint16					read_offset_in_register;
+			r2h_uint16					read_size_in_register;
+			r2h_uint16					write_offset_in_register;
+			r2h_uint16					write_size_in_register;
+			r2h_byte					size_in_byte;
+		}__attribute__((packed)) read_write_registers_request_header;
+		struct
+		{
+			MODBUS_RTU_FUNC_CODE_T		code;
+			r2h_uint16					read_offset_in_register;
+			r2h_uint16					read_size_in_register;
+			r2h_uint16					write_offset_in_register;
+			r2h_uint16					write_size_in_register;
+			r2h_byte					size_in_byte;
+			modbus_rtu_register			data[RW_WRITE_REGISTERS_MAX_IN_REGISTER];
+		}__attribute__((packed)) read_write_registers_request;
+		struct
+		{
+			MODBUS_RTU_FUNC_CODE_T		code;
+			r2h_byte					size_in_byte;
+		}__attribute__((packed)) read_write_registers_response_header;
+		struct
+		{
+			MODBUS_RTU_FUNC_CODE_T		code;
+			r2h_byte					size_in_byte;
+			modbus_rtu_register			data[RW_READ_REGISTERS_MAX_IN_REGISTER];
+		}__attribute__((packed)) read_write_registers_response;
+
+		struct
+		{
+			MODBUS_RTU_FUNC_CODE_T		code;
 			r2h_byte					exception;
 		}__attribute__((packed)) exception_response;
 	};
@@ -116,8 +150,15 @@ public:
 
 	r2h_byte ReadHoldings(r2h_byte addr, r2h_uint16 offset, r2h_uint16 size, r2h_uint16* pData, r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
 	r2h_byte WriteMultiples(r2h_byte addr, r2h_uint16 offset, r2h_uint16 size, const r2h_uint16* pData, r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
+	r2h_byte ReadWriteRegisters(r2h_byte addr, r2h_uint16 writeoffset, r2h_uint16 writesize, const r2h_uint16* pWriteData,
+								r2h_uint16 readoffset, r2h_uint16 readsize, r2h_uint16* pReadData,
+								r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
 	r2h_byte ReadHoldings(r2h_byte addr, r2h_uint16 offset, r2h_uint16 size, GenericSharedMemory &sharedMem, r2h_uint16 start, r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
 	r2h_byte WriteMultiples(r2h_byte addr, r2h_uint16 offset, r2h_uint16 size, const GenericSharedMemory &sharedMem, r2h_uint16 start, r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
+	r2h_byte ReadWriteRegisters(r2h_byte addr,
+								r2h_uint16 writeoffset, r2h_uint16 writesize, const GenericSharedMemory &writeMem, r2h_uint16 writememstart,
+								r2h_uint16 readoffset, r2h_uint16 readsize, GenericSharedMemory &readMem, r2h_uint16 readmemstart,
+								r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU = true);
 	virtual SERIAL_PORT_DEVICE_MODEL_T CompatibleModel();
 private:
 	modbus_rtu_adu_t __adu;

@@ -143,6 +143,68 @@ r2h_byte ModbusRtuProtocol::WriteMultiples(r2h_byte addr, r2h_uint16 offset, r2h
 	}
 }
 
+r2h_byte ModbusRtuProtocol::ReadWriteRegisters(r2h_byte addr, r2h_uint16 writeoffset, r2h_uint16 writesize, const r2h_uint16* pWriteData,
+												r2h_uint16 readoffset, r2h_uint16 readsize, r2h_uint16* pReadData,
+												r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU)
+{
+	if(writesize > RW_WRITE_REGISTERS_MAX_IN_REGISTER)
+		throw GenericException(MODBUS_RTU_WRITE_SIZE_OUT_OF_RANGE);
+	if(readsize > RW_READ_REGISTERS_MAX_IN_REGISTER)
+		throw GenericException(MODBUS_RTU_READ_SIZE_OUT_OF_RANGE);
+	try
+	{
+		pthread_mutex_lock(__mutex_ptr);
+		__adu.slave_addr = addr;
+		__adu.pdu.read_write_registers_request.code = MODBUS_RTU_FUNC_CODE_T::READ_WRITE_REGISTERS;
+		__adu.pdu.read_write_registers_request_header.size_in_byte = writesize * sizeof(modbus_rtu_register);
+		if(isLittleEndianCPU)
+		{
+			__adu.pdu.read_write_registers_request_header.read_offset_in_register = __swap_byte_order(readoffset);
+			__adu.pdu.read_write_registers_request_header.read_size_in_register = __swap_byte_order(readsize);
+			__adu.pdu.read_write_registers_request_header.write_offset_in_register = __swap_byte_order(writeoffset);
+			__adu.pdu.read_write_registers_request_header.write_size_in_register = __swap_byte_order(writesize);
+			for(r2h_uint16 i = 0; i < writesize; ++i)
+				__adu.pdu.read_write_registers_request.data[i] = __swap_byte_order(pWriteData[i]);
+		}
+		else
+		{
+			__adu.pdu.read_write_registers_request_header.read_offset_in_register = readoffset;
+			__adu.pdu.read_write_registers_request_header.read_size_in_register = readsize;
+			__adu.pdu.read_write_registers_request_header.write_offset_in_register = writeoffset;
+			__adu.pdu.read_write_registers_request_header.write_size_in_register = writesize;
+			memcpy(__adu.pdu.read_write_registers_request.data, pWriteData, __adu.pdu.read_write_registers_request_header.size_in_byte);
+		}
+		r2h_int32 len = sizeof(__adu.pdu.read_write_registers_request_header) + 1 + __adu.pdu.read_write_registers_request_header.size_in_byte;
+		__crc(__adu.raw, len, __adu.raw + len, __adu.raw + len + 1);
+		__port->Write(__adu.raw, len + 2, &wtimeout);
+		r2h_byte res = __recv_adu(sizeof(__adu.pdu.read_write_registers_response_header) + readsize * sizeof(modbus_rtu_register), rtimeout);
+
+		if(res == 0)
+		{
+			if(__adu.slave_addr != addr)
+				throw GenericException(MODBUS_RTU_SLV_ADDR_MISMATCH);
+			if(__adu.pdu.read_write_registers_response_header.code != MODBUS_RTU_FUNC_CODE_T::READ_WRITE_REGISTERS)
+				throw GenericException(MODBUS_RTU_FUNC_CODE_MISMATCH);
+			if(__adu.pdu.read_write_registers_response_header.size_in_byte != readsize * sizeof(modbus_rtu_register))
+				throw GenericException(MODBUS_RTU_REGISTER_CNT_MISMATCH);
+			if(isLittleEndianCPU)
+			{
+				for(r2h_uint16 i = 0; i < readsize; ++i)
+					pReadData[i] = __swap_byte_order(__adu.pdu.read_write_registers_response.data[i]);
+			}
+			else
+				memcpy(pReadData, __adu.pdu.read_write_registers_response.data, __adu.pdu.read_write_registers_response.size_in_byte);
+		}
+		pthread_mutex_unlock(__mutex_ptr);
+		return res;
+	}
+	catch(GenericException &e)
+	{
+		pthread_mutex_unlock(__mutex_ptr);
+		throw;
+	}
+}
+
 r2h_byte ModbusRtuProtocol::ReadHoldings(r2h_byte addr, r2h_uint16 offset, r2h_uint16 size, GenericSharedMemory &sharedMem, r2h_uint16 start, r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU)
 {
 	if(size > READ_HOLDINGS_MAX_IN_REGISTER)
@@ -236,6 +298,71 @@ r2h_byte ModbusRtuProtocol::WriteMultiples(r2h_byte addr, r2h_uint16 offset, r2h
 				throw GenericException(MODBUS_RTU_WRITE_RANGE_MISMATCH);
 		}
 
+		pthread_mutex_unlock(__mutex_ptr);
+		return res;
+	}
+	catch(GenericException &e)
+	{
+		pthread_mutex_unlock(__mutex_ptr);
+		throw;
+	}
+}
+
+r2h_byte ModbusRtuProtocol::ReadWriteRegisters(r2h_byte addr,
+							r2h_uint16 writeoffset, r2h_uint16 writesize, const GenericSharedMemory &writeMem, r2h_uint16 writememstart,
+							r2h_uint16 readoffset, r2h_uint16 readsize, GenericSharedMemory &readMem, r2h_uint16 readmemstart,
+							r2h_int32 wtimeout, r2h_int32 rtimeout, bool isLittleEndianCPU)
+{
+	if(writesize > RW_WRITE_REGISTERS_MAX_IN_REGISTER)
+		throw GenericException(MODBUS_RTU_WRITE_SIZE_OUT_OF_RANGE);
+	if(readsize > RW_READ_REGISTERS_MAX_IN_REGISTER)
+		throw GenericException(MODBUS_RTU_READ_SIZE_OUT_OF_RANGE);
+	try
+	{
+		pthread_mutex_lock(__mutex_ptr);
+		__adu.slave_addr = addr;
+		__adu.pdu.read_write_registers_request.code = MODBUS_RTU_FUNC_CODE_T::READ_WRITE_REGISTERS;
+		__adu.pdu.read_write_registers_request_header.size_in_byte = writesize * sizeof(modbus_rtu_register);
+		if(isLittleEndianCPU)
+		{
+			__adu.pdu.read_write_registers_request_header.read_offset_in_register = __swap_byte_order(readoffset);
+			__adu.pdu.read_write_registers_request_header.read_size_in_register = __swap_byte_order(readsize);
+			__adu.pdu.read_write_registers_request_header.write_offset_in_register = __swap_byte_order(writeoffset);
+			__adu.pdu.read_write_registers_request_header.write_size_in_register = __swap_byte_order(writesize);
+			writeMem.Read(writememstart, __adu.pdu.read_write_registers_request_header.size_in_byte, (r2h_byte*)__temp);
+			for(r2h_uint16 i = 0; i < writesize; ++i)
+				__adu.pdu.read_write_registers_request.data[i] = __swap_byte_order(__temp[i]);
+		}
+		else
+		{
+			__adu.pdu.read_write_registers_request_header.read_offset_in_register = readoffset;
+			__adu.pdu.read_write_registers_request_header.read_size_in_register = readsize;
+			__adu.pdu.read_write_registers_request_header.write_offset_in_register = writeoffset;
+			__adu.pdu.read_write_registers_request_header.write_size_in_register = writesize;
+			writeMem.Read(writememstart, __adu.pdu.read_write_registers_request_header.size_in_byte, (r2h_byte*)__adu.pdu.read_write_registers_request.data);
+		}
+		r2h_int32 len = sizeof(__adu.pdu.read_write_registers_request_header) + 1 + __adu.pdu.read_write_registers_request_header.size_in_byte;
+		__crc(__adu.raw, len, __adu.raw + len, __adu.raw + len + 1);
+		__port->Write(__adu.raw, len + 2, &wtimeout);
+		r2h_byte res = __recv_adu(sizeof(__adu.pdu.read_write_registers_response_header) + readsize * sizeof(modbus_rtu_register), rtimeout);
+
+		if(res == 0)
+		{
+			if(__adu.slave_addr != addr)
+				throw GenericException(MODBUS_RTU_SLV_ADDR_MISMATCH);
+			if(__adu.pdu.read_write_registers_response_header.code != MODBUS_RTU_FUNC_CODE_T::READ_WRITE_REGISTERS)
+				throw GenericException(MODBUS_RTU_FUNC_CODE_MISMATCH);
+			if(__adu.pdu.read_write_registers_response_header.size_in_byte != readsize * sizeof(modbus_rtu_register))
+				throw GenericException(MODBUS_RTU_REGISTER_CNT_MISMATCH);
+			if(isLittleEndianCPU)
+			{
+				for(r2h_uint16 i = 0; i < readsize; ++i)
+					__temp[i] = __swap_byte_order(__adu.pdu.read_write_registers_response.data[i]);
+				readMem.Write(readmemstart, __adu.pdu.read_write_registers_response_header.size_in_byte, (r2h_byte*)__temp);
+			}
+			else
+				readMem.Write(readmemstart, __adu.pdu.read_write_registers_response_header.size_in_byte, (r2h_byte*)__adu.pdu.read_write_registers_response.data);
+		}
 		pthread_mutex_unlock(__mutex_ptr);
 		return res;
 	}

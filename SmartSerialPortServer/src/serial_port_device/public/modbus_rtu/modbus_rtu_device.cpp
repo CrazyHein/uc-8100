@@ -15,7 +15,7 @@ ModbusRtuDevice::ModbusRtuDevice(ModbusRtuProtocol *protocol, r2h_uint8 unit,
 				__protocol(protocol), __unit(unit),
 				__roffset(rOffset), __rsize(rSize), __woffset(wOffset), __wsize(wSize), __last_ret(0),
 				__wtimeout(wTimeout), __rtimeout(rTimeout), __prohibit(prohibit), __max_interval(0), __min_interval(0),
-				__last_access_ticks(0), __last_op_ticks(0), __reset(true)
+				__last_access_ticks(0), __last_op_ticks(0), __reset(true), __enable_rw(enableRW)
 {
 
 }
@@ -81,22 +81,38 @@ r2h_uint16 ModbusRtuDevice::ExchangeDataWithDevice(GenericSharedMemory &producti
 		*pMaxInterval = __max_interval;
 		*pMinInterval = __min_interval;
 
-
-		res = __protocol->ReadHoldings(__unit, __roffset, __rsize, productionMem, _production_start, __wtimeout, __rtimeout);
-		if(res != 0)
-			__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::PROTOCOL_SPECIFIC + res;
-		else
-			__last_ret = 0;
-
-		if(__last_ret == 0)
+		if(__enable_rw && __rsize > 0 && __wsize)
 		{
-			if(__prohibit > 0)
-				usleep(__prohibit);
-			res = __protocol->WriteMultiples(__unit, __woffset, __wsize, consumeMem, _consume_start, __wtimeout, __rtimeout);
+			res = __protocol->ReadWriteRegisters(__unit,
+												__woffset, __wsize, consumeMem, _consume_start,
+												__roffset, __rsize, productionMem, _production_start,
+												__wtimeout, __rtimeout);
 			if(res != 0)
 				__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::PROTOCOL_SPECIFIC + res;
 			else
 				__last_ret = 0;
+		}
+		else
+		{
+			if(__rsize > 0)
+			{
+				res = __protocol->ReadHoldings(__unit, __roffset, __rsize, productionMem, _production_start, __wtimeout, __rtimeout);
+				if(res != 0)
+					__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::PROTOCOL_SPECIFIC + res;
+				else
+					__last_ret = 0;
+			}
+
+			if((__rsize == 0 || __last_ret == 0) && __wsize > 0)
+			{
+				if(__prohibit > 0)
+					usleep(__prohibit);
+				res = __protocol->WriteMultiples(__unit, __woffset, __wsize, consumeMem, _consume_start, __wtimeout, __rtimeout);
+				if(res != 0)
+					__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::PROTOCOL_SPECIFIC + res;
+				else
+					__last_ret = 0;
+			}
 		}
 	}
 	catch(SysDriverException &e)

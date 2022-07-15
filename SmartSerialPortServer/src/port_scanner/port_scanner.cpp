@@ -12,6 +12,8 @@
 #include "../serial_port_device/models.hpp"
 #include "../serial_port_device/public/modbus_rtu/modbus_rtu_protocol.hpp"
 #include "../serial_port_device/public/modbus_rtu/modbus_rtu_device.hpp"
+#include "../serial_port_device/public/modbus_ascii/modbus_ascii_protocol.hpp"
+#include "../serial_port_device/public/modbus_ascii/modbus_ascii_device.hpp"
 
 using namespace serial_port_device;
 
@@ -254,6 +256,21 @@ void PortScanner::AppendDevice(r2h_byte port, r2h_byte unit, r2h_byte model, r2h
 			else
 				pt = __port_id_to_protocol[port][model];
 			d = new ModbusRtuDevice((ModbusRtuProtocol*)pt, unit, txOffset/2, txSize/2, rxOffset/2, rxSize/2, wTimeout, rTimeout, prohibit);
+			pt = nullptr;
+			auctualTxSize = txSize;
+			auctualRxSize = rxSize;
+			break;
+		case SERIAL_PORT_DEVICE_MODEL_T::GENERIC_MODBUS_ASCII:
+			if(txOffset % 2 != 0 || txSize % 2 != 0 || rxOffset % 2 != 0 || rxSize % 2 != 0)
+				throw GenericException(PORT_SCANNER_INVALID_SLV_PARAM);
+			if(__port_id_to_protocol[port].find(model) == __port_id_to_protocol[port].end())
+			{
+				pt = new ModbusAsciiProtocol(p, __port_op_mutexes[port]);
+				__port_id_to_protocol[port][model] = pt;
+			}
+			else
+				pt = __port_id_to_protocol[port][model];
+			d = new ModbusAsciiDevice((ModbusAsciiProtocol*)pt, unit, txOffset/2, txSize/2, rxOffset/2, rxSize/2, wTimeout, rTimeout, prohibit);
 			pt = nullptr;
 			auctualTxSize = txSize;
 			auctualRxSize = rxSize;

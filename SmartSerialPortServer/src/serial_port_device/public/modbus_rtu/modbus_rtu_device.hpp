@@ -19,7 +19,7 @@ class ModbusRtuDevice:public IDevice
 public:
 	ModbusRtuDevice(ModbusRtuProtocol *protocol, r2h_uint8 unit,
 			r2h_uint16 rOffset, r2h_uint16 rSize, r2h_uint16 wOffset, r2h_uint16 wSize,
-			r2h_int32 wTimeout, r2h_int32 rTimeout, r2h_int32 prohibit, bool enableRW = false);
+			r2h_int32 wTimeout, r2h_int32 rTimeout, r2h_int32 prohibit, bool enableRW = true);
 	ModbusRtuDevice(const ModbusRtuDevice&) = delete;
 	ModbusRtuDevice(ModbusRtuDevice&&) = delete;
 
@@ -40,7 +40,7 @@ private:
 	const r2h_uint32 __prohibit;
 	r2h_uint32 __max_interval, __min_interval, __last_access_ticks, __last_op_ticks;
 	bool __reset;
-
+	bool __enable_rw;
 
 };
 

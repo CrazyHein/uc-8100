@@ -18,6 +18,7 @@ namespace serial_port_device
 typedef enum SERIAL_PORT_DEVICE_MODEL: r2h_byte
 {
 	GENERIC_MODBUS_RTU				= 0x01,
+	GENERIC_MODBUS_ASCII			= 0x02,
 }SERIAL_PORT_DEVICE_MODEL_T;
 
 }

@@ -30,6 +30,7 @@ src/eth_port_server/service \
 src/parameter \
 src/port_scanner \
 src/serial_port_device \
+src/serial_port_device/public/modbus_ascii \
 src/serial_port_device/public/modbus_rtu \
 src \
 src/utility \

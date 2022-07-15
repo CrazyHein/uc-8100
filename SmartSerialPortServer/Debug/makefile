@@ -11,6 +11,7 @@ RM := rm -rf
 -include src/utility/pugixml/subdir.mk
 -include src/utility/subdir.mk
 -include src/serial_port_device/public/modbus_rtu/subdir.mk
+-include src/serial_port_device/public/modbus_ascii/subdir.mk
 -include src/serial_port_device/subdir.mk
 -include src/port_scanner/subdir.mk
 -include src/parameter/subdir.mk
