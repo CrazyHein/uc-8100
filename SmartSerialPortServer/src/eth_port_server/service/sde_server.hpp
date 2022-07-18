@@ -19,7 +19,6 @@
 namespace ethernet_port_server
 {
 
-
 class SimpleDataExchangerServer;
 
 typedef struct sde_server_instance
@@ -34,12 +33,29 @@ typedef enum class SDE_SERVER_STATUS: r2h_uint16
 	_RUNNING		= 0x0001
 }SDE_SERVER_STATUS_T;
 
+class WorkersIndicator
+{
+public:
+	explicit WorkersIndicator(r2h_int32 index);
+	WorkersIndicator(const WorkersIndicator&) = delete;
+	WorkersIndicator(WorkersIndicator&&) = delete;
+
+	virtual ~WorkersIndicator();
+
+	void AddWorker(pthread_t id);
+	void RemoveWorker(pthread_t id);
+private:
+	r2h_int32 __workers;
+	r2h_int32 __signal_index;
+	pthread_mutex_t __op_mutex;
+};
+
 class SimpleDataExchangerServer
 {
 public:
 	SimpleDataExchangerServer(r2h_const_string ip, r2h_tcp_port port, r2h_int32 concurrent, r2h_int32 wtimeout, r2h_int32 rtimeout,
 			r2h_int32 listenPriority, r2h_int32 workerPriority,
-			GenericSharedMemory& diag, GenericSharedMemory& dev_tx, GenericSharedMemory& dev_rx);
+			GenericSharedMemory& diag, GenericSharedMemory& dev_tx, GenericSharedMemory& dev_rx, r2h_int32 indicatorIndex = 3);
 	SimpleDataExchangerServer(const SimpleDataExchangerServer&) = delete;
 	SimpleDataExchangerServer(SimpleDataExchangerServer&&) = delete;
 
@@ -67,6 +83,8 @@ private:
 	pthread_mutex_t __workers_op_mutex;
 	sem_t __workers_sem_guard;
 
+	WorkersIndicator __workers_indicator;
+
 	void __clean();
 
 	static r2h_byte __on_read_diag(void* host, r2h_uint16 diagStart, r2h_uint16 diagSize, r2h_byte* pDiag);
@@ -82,8 +100,6 @@ private:
 	static constexpr r2h_uint16 __REVISION_POS = (int)&(((port_server_diagnostic_info_t*)0)->revision);
 	static constexpr r2h_uint16 __STATUS_POS = (int)&(((port_server_diagnostic_info_t*)0)->server_status);
 };
-
-
 
 }
 

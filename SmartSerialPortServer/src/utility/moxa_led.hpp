@@ -25,6 +25,8 @@ typedef enum LED_STATE {
 
 void set_programmable_led(r2h_int32 group, r2h_int32 index, LED_STATE_T state);
 
+void set_signal_led(r2h_int32 group, r2h_int32 index, LED_STATE_T state);
+
 void set_uc8100_green_led(LED_STATE_T state);
 
 void set_uc8100_yellow_led(LED_STATE_T state);

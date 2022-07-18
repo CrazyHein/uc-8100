@@ -14,14 +14,15 @@
 #include "../serial_port_device/public/modbus_rtu/modbus_rtu_device.hpp"
 #include "../serial_port_device/public/modbus_ascii/modbus_ascii_protocol.hpp"
 #include "../serial_port_device/public/modbus_ascii/modbus_ascii_device.hpp"
+#include "../utility/moxa_led.hpp"
 
 using namespace serial_port_device;
 
 namespace port_scanner
 {
-PortScanner::PortScanner(std::map<r2h_byte, Port*> *portCollection, GenericSharedMemory& diagMem, GenericSharedMemory& txMem, GenericSharedMemory& rxMem) :
+PortScanner::PortScanner(std::map<r2h_byte, Port*> *portCollection, GenericSharedMemory& diagMem, GenericSharedMemory& txMem, GenericSharedMemory& rxMem, r2h_int32 indicatorIndex) :
 		__port_collection(portCollection), __started(false), __stop_rsq(false), __num_of_slaves(0),
-		__diag_mem(diagMem), __tx_mem(txMem), __rx_mem(rxMem), __tx_top(0), __rx_top(0)
+		__diag_mem(diagMem), __tx_mem(txMem), __rx_mem(rxMem), __tx_top(0), __rx_top(0), __device_indicator(indicatorIndex)
 {
 	pthread_mutex_t* portOpMutex = nullptr;
 	memset(__slaves_info, 0, sizeof(__slaves_info));
@@ -407,6 +408,8 @@ void* PortScanner::__scan_routine(void* p)
 					sizeof(serial_port_device_status_t),
 					(r2h_byte*)(pHost->__slaves_status + dev));
 
+			pHost->__device_indicator.SetDeviceException(dev, pHost->__slaves_status[dev].exception);
+
 			if(pHost->__slaves_status[dev].exception == (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_ERROR)
 			{
 				//usleep(100000);//100ms
@@ -415,5 +418,62 @@ void* PortScanner::__scan_routine(void* p)
 		}
 	}
 	return nullptr;
+}
+
+DeviceIndicator::DeviceIndicator(r2h_int32 index): __indicator(nullptr), __indicator_size(0), __signal_state(false), __signal_index(index)
+{
+	__op_mutex = {0};
+	int res = pthread_mutex_init(&__op_mutex, nullptr);
+	if(res != 0)
+		throw SysResourceException(SYS_OUT_OF_RESOURCE);
+	try
+	{
+		__indicator_size = MAX_SERIAL_PORT_DEVICE_NODES/8 + (((MAX_SERIAL_PORT_DEVICE_NODES % 8) == 0) ? 0 : 1);
+		__indicator = new r2h_byte[__indicator_size];
+		memset(__indicator, 0, __indicator_size);
+	}
+	catch(std::exception &e)
+	{
+		throw SysResourceException(SYS_OUT_OF_MEMORY);
+	}
+}
+
+DeviceIndicator::~DeviceIndicator()
+{
+	if(__indicator != nullptr)
+		delete[] __indicator;
+	pthread_mutex_destroy(&__op_mutex);
+}
+
+void DeviceIndicator::SetDeviceException(r2h_byte devIdx, r2h_uint16 exception)
+{
+	pthread_mutex_lock(&__op_mutex);
+
+	bool state = false;
+	if(exception != 0)
+	{
+		__indicator[devIdx/8] |= (1 << (devIdx % 8));
+		state = true;
+	}
+	else
+	{
+		__indicator[devIdx/8] &= ~(1 << (devIdx % 8));
+		for(r2h_int32 i = 0; i < __indicator_size; ++i)
+		{
+			if(__indicator[i] != 0)
+			{
+				state = true;
+				break;
+			}
+		}
+	}
+
+	if(state != __signal_state)
+	{
+		set_signal_led(1, __signal_index, state ? LED_STATE_T::LED_STATE_ON : LED_STATE_T::LED_STATE_OFF);
+		__signal_state = state;
+	}
+
+	pthread_mutex_unlock(&__op_mutex);
 }
 }

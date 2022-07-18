@@ -27,6 +27,23 @@ void set_programmable_led(r2h_int32 group, r2h_int32 index, LED_STATE_T state)
 		throw SysDriverException(MOXA_API_LED_OP_EXCEPTION);
 }
 
+void set_signal_led(r2h_int32 group, r2h_int32 index, LED_STATE_T state)
+{
+	int res = 0;
+
+	if(__MOXA_LED_LIB_INITIALIZED == 0)
+	{
+		res = mx_led_init();
+		if(res < 0)
+			throw SysDriverException(MOXA_API_LED_INIT_EXCEPTION);
+		__MOXA_LED_LIB_INITIALIZED = 1;
+	}
+
+	res = mx_led_set_brightness(LED_TYPE_SIGNAL, group, index, (r2h_int32)state);
+	if(res < 0)
+		throw SysDriverException(MOXA_API_LED_OP_EXCEPTION);
+}
+
 void set_uc8100_green_led(LED_STATE_T state)
 {
 	int res = 0;

@@ -7,6 +7,7 @@
 #include "sde_server.hpp"
 #include "../../common/exception.hpp"
 #include "../../utility/socket.hpp"
+#include "../../utility/moxa_led.hpp"
 #include "../protocol/simple_data_exchanger.hpp"
 #include <string.h>
 #include <sys/socket.h>
@@ -23,11 +24,11 @@ namespace ethernet_port_server
 {
 SimpleDataExchangerServer::SimpleDataExchangerServer(r2h_const_string ip, r2h_tcp_port port, r2h_int32 concurrent, r2h_int32 wtimeout, r2h_int32 rtimeout,
 				r2h_int32 listenPriority, r2h_int32 workerPriority,
-				GenericSharedMemory& diag, GenericSharedMemory& dev_tx, GenericSharedMemory& dev_rx) : __binding_port(port),
+				GenericSharedMemory& diag, GenericSharedMemory& dev_tx, GenericSharedMemory& dev_rx, r2h_int32 indicatorIndex) : __binding_port(port),
 				__write_timeout(wtimeout), __read_timeout(rtimeout),
 				__listen_priority(listenPriority), __worker_priority(workerPriority),
 				 __dev_tx_mem(dev_tx), __diag_mem(diag), __dev_rx_mem(dev_rx),
-				__listen_socket(~0), __listen_task(0), __started(false), __status(SDE_SERVER_STATUS::_STOP)
+				__listen_socket(~0), __listen_task(0), __started(false), __status(SDE_SERVER_STATUS::_STOP), __workers_indicator(indicatorIndex)
 {
 	try
 	{
@@ -277,6 +278,8 @@ void* SimpleDataExchangerServer::__worker_routine(void *param)
 		return nullptr;
 	}
 
+	pInstance->server->__workers_indicator.AddWorker(id);
+
 	while(true)
 	{
 		try
@@ -301,6 +304,7 @@ void* SimpleDataExchangerServer::__worker_routine(void *param)
 	pInstance->server->__corrupt_workers.push_back(id);
 	pthread_mutex_unlock(&pInstance->server->__workers_op_mutex);
 	sem_post(&pInstance->server->__workers_sem_guard);
+	pInstance->server->__workers_indicator.RemoveWorker(id);
 	return nullptr;
 }
 
@@ -344,6 +348,41 @@ r2h_byte SimpleDataExchangerServer::__on_write_dev_rx(void* host, r2h_uint16 dev
 	{
 		return (r2h_byte)SDE_EXCEPTION_CODE_T::WRITE_DEV_RX_OUT_OF_RANGE;
 	}
+}
+
+WorkersIndicator::WorkersIndicator(r2h_int32 index):__workers(0), __signal_index(index)
+{
+	__op_mutex = {0};
+	int res = pthread_mutex_init(&__op_mutex, nullptr);
+	if(res != 0)
+		throw SysResourceException(SYS_OUT_OF_RESOURCE);
+}
+
+WorkersIndicator::~WorkersIndicator()
+{
+	pthread_mutex_destroy(&__op_mutex);
+}
+
+void WorkersIndicator::AddWorker(pthread_t id)
+{
+	pthread_mutex_lock(&__op_mutex);
+	__workers++;
+	if(__workers)
+		set_signal_led(1, __signal_index, LED_STATE_T::LED_STATE_ON);
+	else
+		set_signal_led(1, __signal_index, LED_STATE_T::LED_STATE_OFF);
+	pthread_mutex_unlock(&__op_mutex);
+}
+
+void WorkersIndicator::RemoveWorker(pthread_t id)
+{
+	pthread_mutex_lock(&__op_mutex);
+	__workers--;
+	if(__workers)
+		set_signal_led(1, __signal_index, LED_STATE_T::LED_STATE_ON);
+	else
+		set_signal_led(1, __signal_index, LED_STATE_T::LED_STATE_OFF);
+	pthread_mutex_unlock(&__op_mutex);
 }
 
 }

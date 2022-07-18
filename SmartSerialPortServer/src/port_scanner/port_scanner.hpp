@@ -22,10 +22,29 @@ using namespace serial_port_device;
 
 namespace port_scanner
 {
+class DeviceIndicator
+{
+public:
+	explicit DeviceIndicator(r2h_int32 index);
+	DeviceIndicator(const DeviceIndicator&) = delete;
+	DeviceIndicator(DeviceIndicator&&) = delete;
+
+	virtual ~DeviceIndicator();
+
+	void SetDeviceException(r2h_byte devIdx, r2h_uint16 exception);
+
+private:
+	r2h_byte* __indicator;
+	r2h_int32 __indicator_size;
+	bool __signal_state;
+	r2h_int32 __signal_index;
+	pthread_mutex_t __op_mutex;
+};
+
 class PortScanner
 {
 public:
-	explicit PortScanner(std::map<r2h_byte, Port*> *portCollection, GenericSharedMemory& diagMem, GenericSharedMemory& txMem, GenericSharedMemory& rxMem);
+	explicit PortScanner(std::map<r2h_byte, Port*> *portCollection, GenericSharedMemory& diagMem, GenericSharedMemory& txMem, GenericSharedMemory& rxMem, r2h_int32 indicatorIndex = 2);
 	PortScanner(const PortScanner&) = delete;
 	PortScanner(PortScanner&&) = delete;
 
@@ -60,6 +79,8 @@ private:
 
 	serial_port_device_info_t __slaves_info[MAX_SERIAL_PORT_DEVICE_NODES];
 	serial_port_device_status_t __slaves_status[MAX_SERIAL_PORT_DEVICE_NODES];
+
+	DeviceIndicator __device_indicator;
 
 	static constexpr r2h_uint16 __SLAVE_INFO_POS = (int)&(((port_server_diagnostic_info_t*)0)->serial_devices_info);
 	static constexpr r2h_uint16 __SLAVE_STATUS_POS = (int)&(((port_server_diagnostic_info_t*)0)->serial_devices_status);
