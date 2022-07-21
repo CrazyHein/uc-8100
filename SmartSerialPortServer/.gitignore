@@ -57,4 +57,5 @@ local.properties
 
 # bin
 Debug/SmartSerialPortServer
+Release/SmartSerialPortServer
 

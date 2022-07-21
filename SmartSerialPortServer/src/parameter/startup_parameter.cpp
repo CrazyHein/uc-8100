@@ -38,31 +38,31 @@ StartupParameter::StartupParameter(r2h_const_string path, r2h_const_string proto
 				else if(strcmp(attr.name(), "Concurrent") == 0)
 				{
 					__server.concurrent = attr.text().as_int(-1);
-					if(__server.concurrent == -1)
+					if(__server.concurrent <= 0)
 						throw GenericException(INVALID_ETHSERVER_CONCURRENT);
 				}
 				else if(strcmp(attr.name(), "WorkPriority") == 0)
 				{
 					__server.work_priority = attr.text().as_int(-1);
-					if(__server.work_priority == -1)
+					if(__server.work_priority < 0)
 						throw GenericException(INVALID_ETHSERVER_WKPRIORITY);
 				}
 				else if(strcmp(attr.name(), "ListenPriority") == 0)
 				{
 					__server.listen_priority = attr.text().as_int(-1);
-					if(__server.listen_priority == -1)
+					if(__server.listen_priority < 0)
 						throw GenericException(INVALID_ETHSERVER_LSPRIORITY);
 				}
 				else if(strcmp(attr.name(), "RecvTimeout") == 0)
 				{
 					__server.read_timeout = attr.text().as_int(-1);
-					if(__server.read_timeout == -1)
+					if(__server.read_timeout < 0)
 						throw GenericException(INVALID_ETHSERVER_RECV_TIMEOUT);
 				}
 				else if(strcmp(attr.name(), "SendTimeout") == 0)
 				{
 					__server.write_timeout = attr.text().as_int(-1);
-					if(__server.write_timeout == -1)
+					if(__server.write_timeout < 0)
 						throw GenericException(INVALID_ETHSERVER_SEND_TIMEOUT);
 				}
 				else if(strcmp(attr.name(), "Protocol") == 0)
@@ -82,7 +82,7 @@ StartupParameter::StartupParameter(r2h_const_string path, r2h_const_string proto
 				if(strcmp(attr.name(), "ID") == 0)
 				{
 					pc.id = attr.text().as_int(-1);
-					if(pc.id < 0)
+					if(pc.id < 0 || pc.id > 99)
 						throw GenericException(INVALID_PORT_ID);
 				}
 				else if(strcmp(attr.name(), "Prefix") == 0)
@@ -121,19 +121,19 @@ StartupParameter::StartupParameter(r2h_const_string path, r2h_const_string proto
 				else if(strcmp(attr.name(), "BaudRate") == 0)
 				{
 					pc.baud_rate = attr.text().as_int(-1);
-					if(pc.baud_rate < 0)
+					if(pc.baud_rate <= 0)
 						throw GenericException(INVALID_PORT_BAUDRATE);
 				}
 				else if(strcmp(attr.name(), "DataBits") == 0)
 				{
 					pc.data_bits = attr.text().as_int(-1);
-					if(pc.data_bits < 0)
+					if(pc.data_bits <= 0)
 						throw GenericException(INVALID_PORT_DATABITS);
 				}
 				else if(strcmp(attr.name(), "StopBits") == 0)
 				{
 					pc.stop_bits = attr.text().as_int(-1);
-					if(pc.stop_bits < 0)
+					if(pc.stop_bits <= 0)
 						throw GenericException(INVALID_PORT_STOPBITS);
 				}
 				else if(strcmp(attr.name(), "Priority") == 0)
@@ -155,7 +155,7 @@ StartupParameter::StartupParameter(r2h_const_string path, r2h_const_string proto
 				if(strcmp(attr.name(), "Port") == 0)
 				{
 					dc.port_id = attr.text().as_int(-1);
-					if(dc.port_id< 0)
+					if(dc.port_id < 0 || dc.port_id > 99)
 						throw GenericException(INVALID_PORT_ID);
 				}
 				else if(strcmp(attr.name(), "Unit") == 0)
