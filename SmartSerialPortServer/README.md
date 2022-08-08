@@ -357,7 +357,56 @@ Save the  "io_list.xml" file and transfer it to PLC via ftp.
 
 #### via Generic PLC
 
-TBD
+I prepared a demo plc project (GX Works3 Version 10.82L Mitsubishi R04) for your reference.
+
+You can find the project file in this directory: [./GenericMaster/RPLC](./GenericMaster/RPLC).
+
+Open the project file, you can find a function block named SDE/master, this function block can be used to communicate and exchange data with port server.
+
+VAR_INPUT of FB
+
+| Name                   | Data Type              | Default Value | Comment                                                      |
+| ---------------------- | ---------------------- | ------------- | ------------------------------------------------------------ |
+| execute                | bool                   | N/A           | Signal rising edge will enable the function block.           |
+| build_in               | bool                   | TRUE          | Indicate whether using build-in ethernet or not.<br />For now, only build-in ethernet function is supported. |
+| start_io               | unsigned 16-bit number | N/A           | Not used                                                     |
+| connection_num         | unsigned 16-bit number | N/A           | Connection number: 1 - 16                                    |
+| local_port             | unsigned 16-bit number | N/A           | Specify the port number of the own station.                  |
+| remote_ip              | unsigned 32-bit number | N/A           | Specify the IP address of an external device.                |
+| remote_port            | unsigned 16-bit number | N/A           | Specify the destination port number.                         |
+| send_timeout_value     | time                   | N/A           |                                                              |
+| recv_timeout_value     | time                   | N/A           |                                                              |
+| communication_interval | time                   | T#100ms       |                                                              |
+| tx_data_buffer         | unsigned 32-bit number | N/A           | The address of tx data buffers <sup>[1]</sup>.<br />The master function block put all tx data reading from serial device into the data buffer.<br />The data is arranged in the order defined in configuration xml file. |
+| rx_data_buffer         | unsigned 32-bit number | N/A           | The address of rx data buffer <sup>[1]</sup><br />The master function block transfer the data in the data buffer to serial device.<br />The data should be arranged in the order defined in configuration xml file. |
+| tx_data_length         | unsigned 16-bit number | 0             | Specify the tx data length. (Number of bytes).               |
+| rx_data_length         | unsigned 16-bit number | 0             | Specify the rx data length. (Number of bytes).               |
+
+**Note:**
+
+[1] : 	If D1000 is head device of data buffer, you can use the following instruction to store the address of data buffer to D5000 and D5001.
+
+```assembly
+ADRSET D1000 D5000
+```
+
+
+
+VAR_OUTPUT of FB
+
+| Name                  | Data Type              | Comment                                                      |
+| --------------------- | ---------------------- | ------------------------------------------------------------ |
+| connection_status     | bool                   | Indicate whether the master has established connection with port server. |
+| communication_counter | unsigned 16-bit number | A communication counter, which counts the number of times data exchanges with port server. |
+| server_version        | unsigned 16-bit number | The firmware version of port server.                         |
+| server_revision       | unsigned 16-bit number | The firmware revision of port server.                        |
+| num_of_slv_nodes      | unsigned 16-bit number | The number of serial devices.                                |
+| slv_nodes_addr        | unsigned 16-bit number | The head device which the master stores slave node addresses.<br />The slave node address is calculated by {Port ID} * 100 + {Device Unit}.<br />You should reserve at least 32 soft devices for master function block to store slave node addresses. |
+| slv_nodes_status      | unsigned 16-bit number | The head device which the master stores slave node exception codes.<br />You should reserve at least 32 soft devices for master function block to store slave node exception codes. |
+| slv_nodes_tx_pos      | unsigned 16-bit number | The head device which the master stores slave node tx data offsets(number of bytes)  in tx data buffer.<br />You should reserve at least 32 soft devices for master function block. |
+| slv_nodes_tx_size     | unsigned 16-bit number | The head device which the master stores slave node tx data sizes(number of bytes) in tx data buffer.<br />You should reserve at least 32 soft devices for master function block. |
+| slv_nodes_rx_pos      | unsigned 16-bit number | The head device which the master stores slave node rx data offsets(number of bytes)  in tx data buffer.<br />You should reserve at least 32 soft devices for master function block. |
+| slv_nodes_rx_size     | unsigned 16-bit number | The head device which the master stores slave node rx data sizes(number of bytes) in tx data buffer.<br />You should reserve at least 32 soft devices for master function block. |
 
 
 
