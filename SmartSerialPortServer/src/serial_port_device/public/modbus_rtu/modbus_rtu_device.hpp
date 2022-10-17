@@ -30,6 +30,9 @@ public:
 	virtual r2h_uint16 ExchangeDataWithDevice(GenericSharedMemory &productionMem, GenericSharedMemory &consumeMem,
 			r2h_uint32 uticks, r2h_uint32 *interval, r2h_uint32 *maxInterval, r2h_uint32 *minInterval);
 	virtual void ReadConfiguration(r2h_byte *instance, r2h_byte *devIndex, r2h_uint16 *productionStart, r2h_uint16 *consumeStart);
+	virtual r2h_int32 ReadTimeout();
+	virtual r2h_int32 WriteTimeout();
+	virtual r2h_int32 ProhibitTime();
 
 private:
 	ModbusRtuProtocol* __protocol;
@@ -43,6 +46,21 @@ private:
 	bool __enable_rw;
 
 };
+
+inline r2h_int32 ModbusRtuDevice::ReadTimeout()
+{
+	return __rtimeout;
+}
+
+inline r2h_int32 ModbusRtuDevice::WriteTimeout()
+{
+	return __wtimeout;
+}
+
+inline r2h_int32 ModbusRtuDevice::ProhibitTime()
+{
+	return __prohibit;
+}
 
 }
 

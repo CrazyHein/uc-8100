@@ -412,7 +412,7 @@ void* PortScanner::__scan_routine(void* p)
 
 			if(pHost->__slaves_status[dev].exception == (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_ERROR)
 			{
-				//usleep(100000);//100ms
+				usleep((*d)->ReadTimeout() * 1000);
 				pPort->Discard(UART_QUEUE_SELECTOR_T::IN_OUT);
 			}
 		}

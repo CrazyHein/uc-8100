@@ -26,6 +26,9 @@ public:
 	virtual r2h_uint16 ExchangeDataWithDevice(GenericSharedMemory &productionMem, GenericSharedMemory &consumeMem,
 			r2h_uint32 uticks, r2h_uint32 *interval, r2h_uint32 *maxInterval, r2h_uint32 *minInterval) = 0;
 	virtual void ReadConfiguration(r2h_byte *instance, r2h_byte *devIndex, r2h_uint16 *productionStart, r2h_uint16 *consumeStart) = 0;
+	virtual r2h_int32 ReadTimeout() = 0;
+	virtual r2h_int32 WriteTimeout() = 0;
+	virtual r2h_int32 ProhibitTime() = 0;
 	virtual ~IDevice()
 	{
 
