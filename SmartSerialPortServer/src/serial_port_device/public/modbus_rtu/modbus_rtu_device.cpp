@@ -81,7 +81,7 @@ r2h_uint16 ModbusRtuDevice::ExchangeDataWithDevice(GenericSharedMemory &producti
 		*pMaxInterval = __max_interval;
 		*pMinInterval = __min_interval;
 
-		if(__enable_rw && __rsize > 0 && __wsize)
+		if(__enable_rw && __rsize > 0 && __wsize && _instance == 1)
 		{
 			res = __protocol->ReadWriteRegisters(__unit,
 												__woffset, __wsize, consumeMem, _consume_start,
@@ -123,7 +123,10 @@ r2h_uint16 ModbusRtuDevice::ExchangeDataWithDevice(GenericSharedMemory &producti
 	{
 		if(e.ErrorCode() == (r2h_int32)MEM_ACCESS_OUT_OF_RANGE)
 			__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::MEMORY_ACCESS_OUT_OF_RANGE;
-		__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_ERROR;
+		else if(e.ErrorCode() == (r2h_int32)SYS_SERIAL_PORT_OPERATION_TIMEOUT)
+			__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_TIMEOUT;
+		else
+			__last_ret = (r2h_uint16)DEVICE_EXCEPTION_CODE_T::COMMUNICATION_ERROR;
 	}
 
 	clock_gettime(CLOCK_REALTIME, &time);
